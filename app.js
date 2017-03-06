@@ -44932,33 +44932,43 @@ window.addEventListener('load', function() {
 (function defineMustache(global,factory){if(typeof exports==="object"&&exports&&typeof exports.nodeName!=="string"){factory(exports)}else if(typeof define==="function"&&define.amd){define(["exports"],factory)}else{global.Mustache={};factory(global.Mustache)}})(this,function mustacheFactory(mustache){var objectToString=Object.prototype.toString;var isArray=Array.isArray||function isArrayPolyfill(object){return objectToString.call(object)==="[object Array]"};function isFunction(object){return typeof object==="function"}function typeStr(obj){return isArray(obj)?"array":typeof obj}function escapeRegExp(string){return string.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g,"\\$&")}function hasProperty(obj,propName){return obj!=null&&typeof obj==="object"&&propName in obj}var regExpTest=RegExp.prototype.test;function testRegExp(re,string){return regExpTest.call(re,string)}var nonSpaceRe=/\S/;function isWhitespace(string){return!testRegExp(nonSpaceRe,string)}var entityMap={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","/":"&#x2F;","`":"&#x60;","=":"&#x3D;"};function escapeHtml(string){return String(string).replace(/[&<>"'`=\/]/g,function fromEntityMap(s){return entityMap[s]})}var whiteRe=/\s*/;var spaceRe=/\s+/;var equalsRe=/\s*=/;var curlyRe=/\s*\}/;var tagRe=/#|\^|\/|>|\{|&|=|!/;function parseTemplate(template,tags){if(!template)return[];var sections=[];var tokens=[];var spaces=[];var hasTag=false;var nonSpace=false;function stripSpace(){if(hasTag&&!nonSpace){while(spaces.length)delete tokens[spaces.pop()]}else{spaces=[]}hasTag=false;nonSpace=false}var openingTagRe,closingTagRe,closingCurlyRe;function compileTags(tagsToCompile){if(typeof tagsToCompile==="string")tagsToCompile=tagsToCompile.split(spaceRe,2);if(!isArray(tagsToCompile)||tagsToCompile.length!==2)throw new Error("Invalid tags: "+tagsToCompile);openingTagRe=new RegExp(escapeRegExp(tagsToCompile[0])+"\\s*");closingTagRe=new RegExp("\\s*"+escapeRegExp(tagsToCompile[1]));closingCurlyRe=new RegExp("\\s*"+escapeRegExp("}"+tagsToCompile[1]))}compileTags(tags||mustache.tags);var scanner=new Scanner(template);var start,type,value,chr,token,openSection;while(!scanner.eos()){start=scanner.pos;value=scanner.scanUntil(openingTagRe);if(value){for(var i=0,valueLength=value.length;i<valueLength;++i){chr=value.charAt(i);if(isWhitespace(chr)){spaces.push(tokens.length)}else{nonSpace=true}tokens.push(["text",chr,start,start+1]);start+=1;if(chr==="\n")stripSpace()}}if(!scanner.scan(openingTagRe))break;hasTag=true;type=scanner.scan(tagRe)||"name";scanner.scan(whiteRe);if(type==="="){value=scanner.scanUntil(equalsRe);scanner.scan(equalsRe);scanner.scanUntil(closingTagRe)}else if(type==="{"){value=scanner.scanUntil(closingCurlyRe);scanner.scan(curlyRe);scanner.scanUntil(closingTagRe);type="&"}else{value=scanner.scanUntil(closingTagRe)}if(!scanner.scan(closingTagRe))throw new Error("Unclosed tag at "+scanner.pos);token=[type,value,start,scanner.pos];tokens.push(token);if(type==="#"||type==="^"){sections.push(token)}else if(type==="/"){openSection=sections.pop();if(!openSection)throw new Error('Unopened section "'+value+'" at '+start);if(openSection[1]!==value)throw new Error('Unclosed section "'+openSection[1]+'" at '+start)}else if(type==="name"||type==="{"||type==="&"){nonSpace=true}else if(type==="="){compileTags(value)}}openSection=sections.pop();if(openSection)throw new Error('Unclosed section "'+openSection[1]+'" at '+scanner.pos);return nestTokens(squashTokens(tokens))}function squashTokens(tokens){var squashedTokens=[];var token,lastToken;for(var i=0,numTokens=tokens.length;i<numTokens;++i){token=tokens[i];if(token){if(token[0]==="text"&&lastToken&&lastToken[0]==="text"){lastToken[1]+=token[1];lastToken[3]=token[3]}else{squashedTokens.push(token);lastToken=token}}}return squashedTokens}function nestTokens(tokens){var nestedTokens=[];var collector=nestedTokens;var sections=[];var token,section;for(var i=0,numTokens=tokens.length;i<numTokens;++i){token=tokens[i];switch(token[0]){case"#":case"^":collector.push(token);sections.push(token);collector=token[4]=[];break;case"/":section=sections.pop();section[5]=token[2];collector=sections.length>0?sections[sections.length-1][4]:nestedTokens;break;default:collector.push(token)}}return nestedTokens}function Scanner(string){this.string=string;this.tail=string;this.pos=0}Scanner.prototype.eos=function eos(){return this.tail===""};Scanner.prototype.scan=function scan(re){var match=this.tail.match(re);if(!match||match.index!==0)return"";var string=match[0];this.tail=this.tail.substring(string.length);this.pos+=string.length;return string};Scanner.prototype.scanUntil=function scanUntil(re){var index=this.tail.search(re),match;switch(index){case-1:match=this.tail;this.tail="";break;case 0:match="";break;default:match=this.tail.substring(0,index);this.tail=this.tail.substring(index)}this.pos+=match.length;return match};function Context(view,parentContext){this.view=view;this.cache={".":this.view};this.parent=parentContext}Context.prototype.push=function push(view){return new Context(view,this)};Context.prototype.lookup=function lookup(name){var cache=this.cache;var value;if(cache.hasOwnProperty(name)){value=cache[name]}else{var context=this,names,index,lookupHit=false;while(context){if(name.indexOf(".")>0){value=context.view;names=name.split(".");index=0;while(value!=null&&index<names.length){if(index===names.length-1)lookupHit=hasProperty(value,names[index]);value=value[names[index++]]}}else{value=context.view[name];lookupHit=hasProperty(context.view,name)}if(lookupHit)break;context=context.parent}cache[name]=value}if(isFunction(value))value=value.call(this.view);return value};function Writer(){this.cache={}}Writer.prototype.clearCache=function clearCache(){this.cache={}};Writer.prototype.parse=function parse(template,tags){var cache=this.cache;var tokens=cache[template];if(tokens==null)tokens=cache[template]=parseTemplate(template,tags);return tokens};Writer.prototype.render=function render(template,view,partials){var tokens=this.parse(template);var context=view instanceof Context?view:new Context(view);return this.renderTokens(tokens,context,partials,template)};Writer.prototype.renderTokens=function renderTokens(tokens,context,partials,originalTemplate){var buffer="";var token,symbol,value;for(var i=0,numTokens=tokens.length;i<numTokens;++i){value=undefined;token=tokens[i];symbol=token[0];if(symbol==="#")value=this.renderSection(token,context,partials,originalTemplate);else if(symbol==="^")value=this.renderInverted(token,context,partials,originalTemplate);else if(symbol===">")value=this.renderPartial(token,context,partials,originalTemplate);else if(symbol==="&")value=this.unescapedValue(token,context);else if(symbol==="name")value=this.escapedValue(token,context);else if(symbol==="text")value=this.rawValue(token);if(value!==undefined)buffer+=value}return buffer};Writer.prototype.renderSection=function renderSection(token,context,partials,originalTemplate){var self=this;var buffer="";var value=context.lookup(token[1]);function subRender(template){return self.render(template,context,partials)}if(!value)return;if(isArray(value)){for(var j=0,valueLength=value.length;j<valueLength;++j){buffer+=this.renderTokens(token[4],context.push(value[j]),partials,originalTemplate)}}else if(typeof value==="object"||typeof value==="string"||typeof value==="number"){buffer+=this.renderTokens(token[4],context.push(value),partials,originalTemplate)}else if(isFunction(value)){if(typeof originalTemplate!=="string")throw new Error("Cannot use higher-order sections without the original template");value=value.call(context.view,originalTemplate.slice(token[3],token[5]),subRender);if(value!=null)buffer+=value}else{buffer+=this.renderTokens(token[4],context,partials,originalTemplate)}return buffer};Writer.prototype.renderInverted=function renderInverted(token,context,partials,originalTemplate){var value=context.lookup(token[1]);if(!value||isArray(value)&&value.length===0)return this.renderTokens(token[4],context,partials,originalTemplate)};Writer.prototype.renderPartial=function renderPartial(token,context,partials){if(!partials)return;var value=isFunction(partials)?partials(token[1]):partials[token[1]];if(value!=null)return this.renderTokens(this.parse(value),context,partials,value)};Writer.prototype.unescapedValue=function unescapedValue(token,context){var value=context.lookup(token[1]);if(value!=null)return value};Writer.prototype.escapedValue=function escapedValue(token,context){var value=context.lookup(token[1]);if(value!=null)return mustache.escape(value)};Writer.prototype.rawValue=function rawValue(token){return token[1]};mustache.name="mustache.js";mustache.version="2.2.1";mustache.tags=["{{","}}"];var defaultWriter=new Writer;mustache.clearCache=function clearCache(){return defaultWriter.clearCache()};mustache.parse=function parse(template,tags){return defaultWriter.parse(template,tags)};mustache.render=function render(template,view,partials){if(typeof template!=="string"){throw new TypeError('Invalid template! Template should be a "string" '+'but "'+typeStr(template)+'" was given as the first '+"argument for mustache#render(template, view, partials)")}return defaultWriter.render(template,view,partials)};mustache.to_html=function to_html(template,view,partials,send){var result=mustache.render(template,view,partials);if(isFunction(send)){send(result)}else{return result}};mustache.escape=escapeHtml;mustache.Scanner=Scanner;mustache.Context=Context;mustache.Writer=Writer});
 
 
+// Awesomplete - Lea Verou - MIT license
+!function(){function t(t){var e=Array.isArray(t)?{label:t[0],value:t[1]}:"object"==typeof t&&"label"in t&&"value"in t?t:{label:t,value:t};this.label=e.label||e.value,this.value=e.value}function e(t,e,i){for(var n in e){var s=e[n],r=t.input.getAttribute("data-"+n.toLowerCase());"number"==typeof s?t[n]=parseInt(r):s===!1?t[n]=null!==r:s instanceof Function?t[n]=null:t[n]=r,t[n]||0===t[n]||(t[n]=n in i?i[n]:s)}}function i(t,e){return"string"==typeof t?(e||document).querySelector(t):t||null}function n(t,e){return o.call((e||document).querySelectorAll(t))}function s(){n("input.awesomplete").forEach(function(t){new r(t)})}var r=function(t,n){var s=this;this.isOpened=!1,this.input=i(t),this.input.setAttribute("autocomplete","off"),this.input.setAttribute("aria-autocomplete","list"),n=n||{},e(this,{minChars:2,maxItems:10,autoFirst:!1,data:r.DATA,filter:r.FILTER_CONTAINS,sort:r.SORT_BYLENGTH,item:r.ITEM,replace:r.REPLACE},n),this.index=-1,this.container=i.create("div",{className:"awesomplete",around:t}),this.ul=i.create("ul",{hidden:"hidden",inside:this.container}),this.status=i.create("span",{className:"visually-hidden",role:"status","aria-live":"assertive","aria-relevant":"additions",inside:this.container}),i.bind(this.input,{input:this.evaluate.bind(this),blur:this.close.bind(this,{reason:"blur"}),keydown:function(t){var e=t.keyCode;s.opened&&(13===e&&s.selected?(t.preventDefault(),s.select()):27===e?s.close({reason:"esc"}):38!==e&&40!==e||(t.preventDefault(),s[38===e?"previous":"next"]()))}}),i.bind(this.input.form,{submit:this.close.bind(this,{reason:"submit"})}),i.bind(this.ul,{mousedown:function(t){var e=t.target;if(e!==this){for(;e&&!/li/i.test(e.nodeName);)e=e.parentNode;e&&0===t.button&&(t.preventDefault(),s.select(e,t.target))}}}),this.input.hasAttribute("list")?(this.list="#"+this.input.getAttribute("list"),this.input.removeAttribute("list")):this.list=this.input.getAttribute("data-list")||n.list||[],r.all.push(this)};r.prototype={set list(t){if(Array.isArray(t))this._list=t;else if("string"==typeof t&&t.indexOf(",")>-1)this._list=t.split(/\s*,\s*/);else if(t=i(t),t&&t.children){var e=[];o.apply(t.children).forEach(function(t){if(!t.disabled){var i=t.textContent.trim(),n=t.value||i,s=t.label||i;""!==n&&e.push({label:s,value:n})}}),this._list=e}document.activeElement===this.input&&this.evaluate()},get selected(){return this.index>-1},get opened(){return this.isOpened},close:function(t){this.opened&&(this.ul.setAttribute("hidden",""),this.isOpened=!1,this.index=-1,i.fire(this.input,"awesomplete-close",t||{}))},open:function(){this.ul.removeAttribute("hidden"),this.isOpened=!0,this.autoFirst&&this.index===-1&&this.goto(0),i.fire(this.input,"awesomplete-open")},next:function(){var t=this.ul.children.length;this.goto(this.index<t-1?this.index+1:t?0:-1)},previous:function(){var t=this.ul.children.length,e=this.index-1;this.goto(this.selected&&e!==-1?e:t-1)},goto:function(t){var e=this.ul.children;this.selected&&e[this.index].setAttribute("aria-selected","false"),this.index=t,t>-1&&e.length>0&&(e[t].setAttribute("aria-selected","true"),this.status.textContent=e[t].textContent,i.fire(this.input,"awesomplete-highlight",{text:this.suggestions[this.index]}))},select:function(t,e){if(t?this.index=i.siblingIndex(t):t=this.ul.children[this.index],t){var n=this.suggestions[this.index],s=i.fire(this.input,"awesomplete-select",{text:n,origin:e||t});s&&(this.replace(n),this.close({reason:"select"}),i.fire(this.input,"awesomplete-selectcomplete",{text:n}))}},evaluate:function(){var e=this,i=this.input.value;i.length>=this.minChars&&this._list.length>0?(this.index=-1,this.ul.innerHTML="",this.suggestions=this._list.map(function(n){return new t(e.data(n,i))}).filter(function(t){return e.filter(t,i)}).sort(this.sort).slice(0,this.maxItems),this.suggestions.forEach(function(t){e.ul.appendChild(e.item(t,i))}),0===this.ul.children.length?this.close({reason:"nomatches"}):this.open()):this.close({reason:"nomatches"})}},r.all=[],r.FILTER_CONTAINS=function(t,e){return RegExp(i.regExpEscape(e.trim()),"i").test(t)},r.FILTER_STARTSWITH=function(t,e){return RegExp("^"+i.regExpEscape(e.trim()),"i").test(t)},r.SORT_BYLENGTH=function(t,e){return t.length!==e.length?t.length-e.length:t<e?-1:1},r.ITEM=function(t,e){var n=""===e?t:t.replace(RegExp(i.regExpEscape(e.trim()),"gi"),"<mark>$&</mark>");return i.create("li",{innerHTML:n,"aria-selected":"false"})},r.REPLACE=function(t){this.input.value=t.value},r.DATA=function(t){return t},Object.defineProperty(t.prototype=Object.create(String.prototype),"length",{get:function(){return this.label.length}}),t.prototype.toString=t.prototype.valueOf=function(){return""+this.label};var o=Array.prototype.slice;return i.create=function(t,e){var n=document.createElement(t);for(var s in e){var r=e[s];if("inside"===s)i(r).appendChild(n);else if("around"===s){var o=i(r);o.parentNode.insertBefore(n,o),n.appendChild(o)}else s in n?n[s]=r:n.setAttribute(s,r)}return n},i.bind=function(t,e){if(t)for(var i in e){var n=e[i];i.split(/\s+/).forEach(function(e){t.addEventListener(e,n)})}},i.fire=function(t,e,i){var n=document.createEvent("HTMLEvents");n.initEvent(e,!0,!0);for(var s in i)n[s]=i[s];return t.dispatchEvent(n)},i.regExpEscape=function(t){return t.replace(/[-\\^$*+?.()|[\]{}]/g,"\\$&")},i.siblingIndex=function(t){for(var e=0;t=t.previousElementSibling;e++);return e},"undefined"!=typeof Document&&("loading"!==document.readyState?s():document.addEventListener("DOMContentLoaded",s)),r.$=i,r.$$=n,"undefined"!=typeof self&&(self.Awesomplete=r),"object"==typeof module&&module.exports&&(module.exports=r),r}();
+//# sourceMappingURL=awesomplete.min.js.map
+
+
+
+
 function getIntervalString(value) {
-    var seconds = value % 60;
-    value = (value - seconds) / 60;
-    var minutes = value % 60;
-    value = (value - minutes) / 60;
-    var hours = value % 24;
-    value = (value - hours) / 24;
-    var days = value
-    return days + " days, " + hours + " hours, " + minutes + " minutes, " + seconds + " seconds";
+  var seconds = value % 60;
+  value = (value - seconds) / 60;
+  var minutes = value % 60;
+  value = (value - minutes) / 60;
+  var hours = value % 24;
+  value = (value - hours) / 24;
+  var days = value
+  return days + " days, " + hours + " hours, " + minutes + " minutes, " + seconds + " seconds";
 }
 
+
+
 function hasAccessToAddress(addressIn) {
-    return window.accounts.filter(function(userAccount) {
-        return userAccount == addressIn
-    }).length > 0
+  return window.accounts.filter(function(userAccount) {
+    return userAccount == addressIn
+  }).length > 0
 }
 
 function displayContract() {
-    var contractAddress = document.forms['contractSelection'].timeClockContract.value;
-    window.contract = TimeClock.at(contractAddress);
-    window.pendingTransactions = [];
-    refreshDisplay();
+  var contractAddress = document.forms['contractSelection'].timeClockContract.value;
+  window.contract = TimeClock.at(contractAddress);
+  window.pendingTransactions = [];
+
+  refreshDisplay();
 }
 
 function setStatus(message) {
-    var status = document.getElementById("status");
-    status.innerHTML = message;
+  var status = document.getElementById("status");
+  status.innerHTML = message;
 };
 
 function rerenderPage(data) {
@@ -44970,289 +44980,388 @@ function rerenderPage(data) {
     var output = Mustache.render(window.template, data);
     document.getElementById('templateInsert').innerHTML = output;
   }
+
 }
 
 function getField(field, fieldName, data, displayFunction) {
-    if (typeof displayFunction == 'undefined') {
-        displayFunction = function(value) {
-            return value;
-        };
-    }
-    field.call({
-        from: window.account
-    }).then(function(value) {
-        data[fieldName] = displayFunction(value);
-        rerenderPage(data);
-    }).catch(function(e) {
-        alert("An error has occured, see log");
-        console.log(e);
-        setStatus("Error getting " + fieldName + "; see log.");
-    });
+  if (typeof displayFunction == 'undefined') {
+    displayFunction = function(value) {
+      return value;
+    };
+  }
+  field.call({
+    from: window.account
+  }).then(function(value) {
+    data[fieldName] = displayFunction(value);
+    rerenderPage(data);
+  }).catch(function(e) {
+    alert("An error has occured, see log");
+    console.log(e);
+    setStatus("Error getting " + fieldName + "; see log.");
+  });
 }
 
+function refreshCreateContract() {
+  var data = {
+    accounts: window.accounts,
+    minDate: new Date().toISOString().substring(0,10)
+  };
+  var output = Mustache.render(window.createContractTemplate, data);
+  document.getElementById('createContractInsert').innerHTML = output;
+
+}
+
+function refreshCreateContractInProgress() {
+  var data = {
+  };
+  var output = Mustache.render(window.createContractInProgress, data);
+  document.getElementById('createContractInsert').innerHTML = output;
+}
 
 function refreshDisplay() {
-    if (typeof window.contract == 'undefined') {
-        document.getElementById('templateInsert').innerHTML = "";
-        return;
+  var existingHistoryS = window.localStorage.TimeClockHistory;
+  var existingHistory;
+  if(typeof(existingHistoryS)=='undefined') {
+    existingHistory = [{address:"0x566d8A075D55122CC19Ad09006114B7B656E6596", description: "TimeClock example contract"}];
+     window.localStorage.TimeClockHistory =  JSON.stringify(existingHistory);
+  } else {
+     existingHistory = JSON.parse(existingHistoryS);
+  }
+
+  var input = document.getElementById("timeClockContract");
+
+  // Show label but insert value into the input:
+  new Awesomplete(input, {
+    list: existingHistory.map(function (history) {
+      return {label: history.address + "|" + history.description,value: history.address};
+    }),
+    minChars: 1
+  });
+
+  if (typeof window.contract == 'undefined') {
+    document.getElementById('templateInsert').innerHTML = "";
+    return;
+  }
+
+  var templateData = {
+    contractees: [],
+    accounts: window.accounts,
+    pendingTransactions: window.pendingTransactions,
+    hasPendingTransactions: window.pendingTransactions.length > 0,
+    allowUpdate : true
+  };
+
+  var timeClock = window.contract;
+  getField(timeClock.contractDetails, 'contractDetails', templateData, function(value) {
+
+    var newHistory = existingHistory.filter(function(row){ return row.address!=window.contract.address});
+    newHistory.unshift({address:window.contract.address, description: value});
+    window.localStorage.TimeClockHistory = JSON.stringify(newHistory);
+
+    return value;
+  });
+
+  getField(timeClock.startTime, 'startTime', templateData, function(value) {
+    return new Date(new Number(value.toString()) * 1000);
+  });
+  getField(timeClock.getNextPaymentDate, 'nextPaymentTime', templateData, function(value) {
+    return new Date(new Number(value.toString()) * 1000);
+  });
+  getField(timeClock.paymentInterval, 'paymentInterval', templateData, getIntervalString);
+  getField(timeClock.paymentsCount, 'paymentsCount', templateData);
+  getField(timeClock.minimumPayment, 'minimumPayment', templateData, function(value) {
+    return web3.fromWei(value, 'ether');
+  });
+
+
+  getField(timeClock.currentPaymentsCount, 'currentPaymentsCount', templateData);
+  getField(timeClock.contractorAddress, 'contractorAddress', templateData);
+  templateData.isContractor = hasAccessToAddress(templateData.contractorAddress);
+
+  getField(timeClock.contracteesSize, 'contracteesSize', templateData);
+  getField(timeClock.amountInEscrow, 'amountInEscrow', templateData, function(value) {
+    return web3.fromWei(value, 'ether');
+  });
+  getField(timeClock.contractorBalance, 'contractorBalance', templateData, function(value) {
+    return web3.fromWei(value, 'ether');
+  });
+
+  timeClock.contracteesSize.call({
+    from: window.account
+  }).then(function(size) {
+    console.log("size = " + size);
+    for (var i = 0; i < size; i++) {
+      (function(index) {
+        timeClock.contractees.call(index, {
+          from: window.account
+        }).then(function(returned) {
+          if (returned[1] > 0) {
+            templateData.contractees.push({
+              index: index,
+              address: returned[0],
+              balance: web3.fromWei(returned[1], 'ether'),
+              description: returned[2],
+              isContractee: hasAccessToAddress(returned[0])
+            });
+          }
+
+          rerenderPage(templateData);
+        }).catch(function(e) {
+          console.log(e);
+          setStatus("Error getting balance; see log.");
+        });;
+      })(i);
     }
+  }).catch(function(e) {
+    alert("An error has occured, see log");
 
-    var templateData = {
-        contractees: [],
-        accounts: window.accounts,
-        pendingTransactions: window.pendingTransactions,
-        hasPendingTransactions: window.pendingTransactions.length > 0,
-        allowUpdate : true
-    };
-
-    var timeClock = window.contract;
-    getField(timeClock.contractDetails, 'contractDetails', templateData);
-
-    getField(timeClock.startTime, 'startTime', templateData, function(value) {
-        return new Date(new Number(value.toString()) * 1000);
-    });
-    getField(timeClock.getNextPaymentDate, 'nextPaymentTime', templateData, function(value) {
-        return new Date(new Number(value.toString()) * 1000);
-    });
-    getField(timeClock.paymentInterval, 'paymentInterval', templateData, getIntervalString);
-    getField(timeClock.paymentsCount, 'paymentsCount', templateData);
-    getField(timeClock.minimumPayment, 'minimumPayment', templateData, function(value) {
-        return web3.fromWei(value, 'ether');
-    });
-
-
-    getField(timeClock.currentPaymentsCount, 'currentPaymentsCount', templateData);
-    getField(timeClock.contractorAddress, 'contractorAddress', templateData);
-    templateData.isContractor = hasAccessToAddress(templateData.contractorAddress);
-
-    getField(timeClock.contracteesSize, 'contracteesSize', templateData);
-    getField(timeClock.amountInEscrow, 'amountInEscrow', templateData, function(value) {
-        return web3.fromWei(value, 'ether');
-    });
-    getField(timeClock.contractorBalance, 'contractorBalance', templateData, function(value) {
-        return web3.fromWei(value, 'ether');
-    });
-
-    timeClock.contracteesSize.call({
-        from: window.account
-    }).then(function(size) {
-        console.log("size = " + size);
-        for (var i = 0; i < size; i++) {
-            (function(index) {
-              timeClock.contractees.call(index, {
-                  from: window.account
-              }).then(function(returned) {
-                  if (returned[1] > 0) {
-                      templateData.contractees.push({
-                          index: index,
-                          address: returned[0],
-                          balance: web3.fromWei(returned[1], 'ether'),
-                          description: returned[2],
-                          isContractee: hasAccessToAddress(returned[0])
-                      });
-                  }
-
-                  rerenderPage(templateData);
-              }).catch(function(e) {
-                  console.log(e);
-                  setStatus("Error getting balance; see log.");
-              });;
-          })(i);
-        }
-    }).catch(function(e) {
-        alert("An error has occured, see log");
-
-        console.log(e);
-        setStatus("Error getting balance; see log.");
-    });
+    console.log(e);
+    setStatus("Error getting balance; see log.");
+  });
 
 };
 
+function createContract() {
+  var startTime = document.forms['createContractForm'].startTime.value;
+
+  var paymentsCount = document.forms['createContractForm'].paymentsCount.value;
+  var paymentsInterval = document.forms['createContractForm'].paymentsInterval.value;
+  var minimumPaymentFromForm = document.forms['createContractForm'].minimumPayment.value;
+  var contractDetailsText = document.forms['createContractForm'].contractDetailsText.value;
+  var minimumPaymentAmount = web3.toWei(minimumPaymentFromForm, 'ether');
+  var accountToCreateFrom = document.forms['createContractForm'].accountToCreateFrom.value;
+  var gasAmount = document.forms['createContractForm'].gasAmount.value;
+
+  var startDelayInSeconds = (new Date(startTime) - new Date()) / 1000;
+  TimeClock.new(contractDetailsText, startDelayInSeconds, paymentsInterval, paymentsCount, minimumPaymentAmount,
+                {
+    from: accountToCreateFrom,
+    gas: gasAmount
+  }
+
+               ).then(function(instance) {
+    // Print the new address
+    console.log(instance.address);
+    window.alert("Contract created at " + instance.address);
+    document.forms['contractSelection'].timeClockContract.value = instance.address;
+    window.contract = TimeClock.at(instance.address);
+    window.pendingTransactions = [];
+    hideOverlay('createContractDialog')
+    refreshCreateContract();
+    refreshDisplay();
+  }).catch(function(err) {
+    alert("An error has occured: " + err.message);
+    console.log(err);
+    refreshCreateContract();
+    hideOverlay('createContractDialog')
+    // There was an error! Handle it.
+  });
+  refreshCreateContractInProgress();
+  showOverlay('createContractDialog')
+}
+
 function pay() {
-    var timeClock = window.contract;
-    var accountToPayFrom = document.forms['timeClockForm'].accountToPayFrom.value;
-    var paymentAmountFromForm = document.forms['timeClockForm'].paymentAmount.value;
-    var paymentAmount = web3.toWei(paymentAmountFromForm, 'ether');
-    var paymentDescription = document.forms['timeClockForm'].paymentDescription.value;
-    var gasAmount = document.forms['timeClockForm'].gasAmount.value;
+  var timeClock = window.contract;
+  var accountToPayFrom = document.forms['timeClockForm'].accountToPayFrom.value;
+  var paymentAmountFromForm = document.forms['timeClockForm'].paymentAmount.value;
+  var paymentAmount = web3.toWei(paymentAmountFromForm, 'ether');
+  var paymentDescription = document.forms['timeClockForm'].paymentDescription.value;
+  var gasAmount = document.forms['timeClockForm'].gasAmount.value;
 
-    if (confirm("Are you sure you want to send " + paymentAmountFromForm + " ether to this TimeClock contract?\n\n" +
-            "(Note: some funds will be immediately transferred into escrow and will not be withdrawable by you)")) {
+  if (confirm("Are you sure you want to send " + paymentAmountFromForm + " ether to this TimeClock contract?\n\n" +
+              "(Note: some funds will be immediately transferred into escrow and will not be withdrawable by you)")) {
 
-        var pendingTransaction = {
-            type: "Payment",
-            amount: paymentAmountFromForm + " ether",
-            description: paymentDescription,
-            status: "Pending",
-            class: "transactionPending"
-        };
-        var purchaseTransaction = timeClock.purchase(paymentDescription, {
-            from: accountToPayFrom,
-            value: paymentAmount,
-            gas: gasAmount
-        }).then(function(txId) {
-            getTransactionStatus(txId, pendingTransaction);
-            refreshDisplay();
-        }).catch(function(e) {
-            pendingTransaction.status = "Failed:" + e.message;
-            pendingTransaction.class = "transactionFailed";
-            alert("An error has occured: " + e.message);
-            console.log(e);
-            d
-            refreshDisplay();
-        });
+    var pendingTransaction = {
+      type: "Payment",
+      amount: paymentAmountFromForm + " ether",
+      description: paymentDescription,
+      status: "Pending",
+      class: "transactionPending"
+    };
+    var purchaseTransaction = timeClock.purchase(paymentDescription, {
+      from: accountToPayFrom,
+      value: paymentAmount,
+      gas: gasAmount
+    }).then(function(txId) {
+      getTransactionStatus(txId, pendingTransaction);
+      refreshDisplay();
+    }).catch(function(e) {
+      pendingTransaction.status = "Failed:" + e.message;
+      pendingTransaction.class = "transactionFailed";
+      alert("An error has occured: " + e.message);
+      console.log(e);
+      refreshDisplay();
+    });
 
-        window.pendingTransactions.push(pendingTransaction);
-        refreshDisplay();
+    window.pendingTransactions.push(pendingTransaction);
+    refreshDisplay();
 
-        console.log("Purchase Transaction = " + purchaseTransaction);
-    }
+    console.log("Purchase Transaction = " + purchaseTransaction);
+  }
 }
 
 function getTransactionStatus(txId, pendingTransaction) {
-    var transactionData = web3.eth.getTransaction(txId);
-    var transactionReceipt = web3.eth.getTransactionReceipt(txId);
-    console.log("txid:" + txId + ", gas used:" + transactionReceipt.gasUsed);
-    if (transactionData.gas == transactionReceipt.gasUsed) {
-        pendingTransaction.status = "Transaction failed";
-        pendingTransaction.class = "transactionFailed";
-    } else {
-        pendingTransaction.status = "Processed";
-        pendingTransaction.class = "transactionProcessed";
-    }
+  var transactionData = web3.eth.getTransaction(txId);
+  var transactionReceipt = web3.eth.getTransactionReceipt(txId);
+  console.log("txid:" + txId + ", gas used:" + transactionReceipt.gasUsed);
+  if (transactionData.gas == transactionReceipt.gasUsed) {
+    pendingTransaction.status = "Transaction failed";
+    pendingTransaction.class = "transactionFailed";
+  } else {
+    pendingTransaction.status = "Processed";
+    pendingTransaction.class = "transactionProcessed";
+  }
 
 }
 
 function contractorWithdraw() {
-    if (confirm("This will transfer all withdrawable funds to the contractor and will cost you gas. \n\nDo you wish to proceed?")) {
+  if (confirm("This will transfer all withdrawable funds to the contractor and will cost you gas. \n\nDo you wish to proceed?")) {
 
-        var timeClock = window.contract;
-        var accountToPayFrom = document.forms['contractorWithdrawForm'].accountToPayFrom.value;
-        var gasAmount = document.forms['contractorWithdrawForm'].gasAmount.value;
+    var timeClock = window.contract;
+    var accountToPayFrom = document.forms['contractorWithdrawForm'].accountToPayFrom.value;
+    var gasAmount = document.forms['contractorWithdrawForm'].gasAmount.value;
 
-        var pendingTransaction = {
-            type: "Contractor Withdraw",
-            amount: "",
-            description: "Withdraw to contractor address",
-            status: "Pending",
-            class: "transactionPending"
-        };
+    var pendingTransaction = {
+      type: "Contractor Withdraw",
+      amount: "",
+      description: "Withdraw to contractor address",
+      status: "Pending",
+      class: "transactionPending"
+    };
 
-        timeClock.contractorWithdraw({
-            from: accountToPayFrom,
-            gas: gasAmount
-        }).then(function(txId) {
-            getTransactionStatus(txId, pendingTransaction);
-            refreshDisplay();
-        }).catch(function(e) {
-            pendingTransaction.status = "Failed:" + e.message;
-            pendingTransaction.class = "transactionFailed";
-            alert("An error has occured: " + e.message);
-            console.log(e);
-            refreshDisplay();
-        });
-        window.pendingTransactions.push(pendingTransaction);
-        refreshDisplay();
-    }
+    timeClock.contractorWithdraw({
+      from: accountToPayFrom,
+      gas: gasAmount
+    }).then(function(txId) {
+      getTransactionStatus(txId, pendingTransaction);
+      refreshDisplay();
+    }).catch(function(e) {
+      pendingTransaction.status = "Failed:" + e.message;
+      pendingTransaction.class = "transactionFailed";
+      alert("An error has occured: " + e.message);
+      console.log(e);
+      refreshDisplay();
+    });
+    window.pendingTransactions.push(pendingTransaction);
+    refreshDisplay();
+  }
 }
 
 function contracteeWithdraw() {
-    if (confirm("Are you sure you want to withdraw your remaining payments from this TimeClock contract?\n\n(Note: this will withdraw all payments made from " + withdrawAddress + ")")) {
+  if (confirm("Are you sure you want to withdraw your remaining payments from this TimeClock contract?\n\n(Note: this will withdraw all payments made from " + withdrawAddress + ")")) {
 
-        var timeClock = window.contract;
-        var withdrawAddress = document.forms['contracteeWithdrawForm'].withdrawAddress.value;
-        var gasAmount = document.forms['contracteeWithdrawForm'].gasAmount.value;
-        var withdrawIndex = document.forms['contracteeWithdrawForm'].withdrawIndex.value;
+    var timeClock = window.contract;
+    var withdrawAddress = document.forms['contracteeWithdrawForm'].withdrawAddress.value;
+    var gasAmount = document.forms['contracteeWithdrawForm'].gasAmount.value;
+    var withdrawIndex = document.forms['contracteeWithdrawForm'].withdrawIndex.value;
 
-        var pendingTransaction = {
-            type: "Contractee Withdraw",
-            amount: "",
-            description: "Withdraw all Contractee balance from " + withdrawAddress,
-            status: "Pending",
-            class: "transactionPending"
-        };
+    var pendingTransaction = {
+      type: "Contractee Withdraw",
+      amount: "",
+      description: "Withdraw all Contractee balance from " + withdrawAddress,
+      status: "Pending",
+      class: "transactionPending"
+    };
 
-        timeClock.contracteeWithdraw(withdrawIndex, {
-            from: withdrawAddress,
-            gas: gasAmount
-        }).then(function(txId) {
-            getTransactionStatus(txId, pendingTransaction);
-            refreshDisplay();
-        }).catch(function(e) {
-            pendingTransaction.status = "Failed:" + e.message;
-            pendingTransaction.class = "transactionFailed";
-            alert("An error has occured: " + e.message);
-            console.log(e);
-            refreshDisplay();
-        });
-    }
-    window.pendingTransactions.push(pendingTransaction);
-    refreshDisplay();
+    timeClock.contracteeWithdraw(withdrawIndex, {
+      from: withdrawAddress,
+      gas: gasAmount
+    }).then(function(txId) {
+      getTransactionStatus(txId, pendingTransaction);
+      refreshDisplay();
+    }).catch(function(e) {
+      pendingTransaction.status = "Failed:" + e.message;
+      pendingTransaction.class = "transactionFailed";
+      alert("An error has occured: " + e.message);
+      console.log(e);
+      refreshDisplay();
+    });
+  }
+  window.pendingTransactions.push(pendingTransaction);
+  refreshDisplay();
 
 }
 
 function updateContract() {
-    if (confirm("This will attempt to move the contract to the next payment interval. This will update the 'Current payment #' and change balances.\n\n" +
-            "This can only be done after the 'Next update time' has passed. This operation will cost gas.\n\n" +
-            "Do you wish to proceed?"
-        )) {
-        var timeClock = window.contract;
-        var updateAddress = document.forms['updateContractForm'].accountToPayFrom.value;
-        var gasAmount = document.forms['updateContractForm'].gasAmount.value;
+  if (confirm("This will attempt to move the contract to the next payment interval. This will update the 'Current payment #' and change balances.\n\n" +
+              "This can only be done after the 'Next update time' has passed. This operation will cost gas.\n\n" +
+              "Do you wish to proceed?"
+             )) {
+    var timeClock = window.contract;
+    var updateAddress = document.forms['updateContractForm'].accountToPayFrom.value;
+    var gasAmount = document.forms['updateContractForm'].gasAmount.value;
 
-        var pendingTransaction = {
-            type: "Update",
-            amount: "",
-            description: "Update the contract state.",
-            status: "Pending",
-            class: "transactionPending"
-        };
+    var pendingTransaction = {
+      type: "Update",
+      amount: "",
+      description: "Update the contract state.",
+      status: "Pending",
+      class: "transactionPending"
+    };
 
-        timeClock.update({
-            from: updateAddress,
-            gas: gasAmount
-        }).then(function(txId) {
-            getTransactionStatus(txId, pendingTransaction);
-            refreshDisplay();
-        }).catch(function(e) {
-            pendingTransaction.status = "Failed:" + e.message;
-            pendingTransaction.class = "transactionFailed";
-            alert("The contract could not be updated. This is normally caused by trying to update the contract before the 'Next update time'. Error was " + e.message);
-            refreshDisplay();
-            console.log(e);
-        });
-    }
-    window.pendingTransactions.push(pendingTransaction);
-    refreshDisplay();
+    timeClock.update({
+      from: updateAddress,
+      gas: gasAmount
+    }).then(function(txId) {
+      getTransactionStatus(txId, pendingTransaction);
+      refreshDisplay();
+    }).catch(function(e) {
+      pendingTransaction.status = "Failed:" + e.message;
+      pendingTransaction.class = "transactionFailed";
+      alert("The contract could not be updated. This is normally caused by trying to update the contract before the 'Next update time'. Error was " + e.message);
+      refreshDisplay();
+      console.log(e);
+    });
+  }
+  window.pendingTransactions.push(pendingTransaction);
+  refreshDisplay();
 }
 
 function overlay(dialogName) {
-    el = document.getElementById(dialogName);
-    el.style.visibility = (el.style.visibility == "visible") ? "hidden" : "visible";
+  el = document.getElementById(dialogName);
+  el.style.visibility = (el.style.visibility == "visible") ? "hidden" : "visible";
+}
+
+function showOverlay(dialogName) {
+  el = document.getElementById(dialogName);
+  el.style.visibility = "visible";
+}
+
+function hideOverlay(dialogName) {
+  el = document.getElementById(dialogName);
+  el.style.visibility = "hidden";
 }
 
 window.onload = function() {
-    web3.eth.getAccounts(function(err, accs) {
-        if (err != null) {
-            alert("There was an error fetching your accounts.");
-            return;
+  web3.eth.getAccounts(function(err, accs) {
+    if (err != null) {
+      alert("There was an error fetching your accounts.");
+      return;
+    }
+
+    if (accs.length == 0) {
+      alert("Couldn't get any accounts! Make sure your Ethereum client is configured correctly.");
+      return;
+    }
+
+    window.accounts = accs;
+    window.account = accounts[0];
+    window.pendingTransactions = [];
+    window.template = document.getElementById('template').innerHTML;
+    window.createContractTemplate = document.getElementById('createContractTemplate').innerHTML;
+    window.createContractInProgress = document.getElementById('createContractInProgress').innerHTML;
+    refreshCreateContract();
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('contract')) {
+      document.forms['contractSelection'].timeClockContract.value = urlParams.get('contract');
+    } else {
+       var existingHistoryS = window.localStorage.TimeClockHistory;
+        if(typeof(existingHistoryS)!='undefined') {
+          existingHistory = JSON.parse(existingHistoryS);
+          document.forms['contractSelection'].timeClockContract.value = existingHistory[0].address;
         }
 
-        if (accs.length == 0) {
-            alert("Couldn't get any accounts! Make sure your Ethereum client is configured correctly.");
-            return;
-        }
-
-        window.accounts = accs;
-        window.account = accounts[0];
-        window.pendingTransactions = [];
-        window.template = document.getElementById('template').innerHTML;
-        var urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('contract')) {
-            document.forms['contractSelection'].timeClockContract.value = urlParams.get('contract');
-        } else if (typeof TimeClock.deployed() != 'undefined') {
-            document.forms['contractSelection'].timeClockContract.value = TimeClock.deployed().address;
-        }
-        refreshDisplay();
-    });
+    }
+    refreshDisplay();
+  });
 }

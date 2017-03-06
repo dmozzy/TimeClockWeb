@@ -16,13 +16,83 @@
     <form name="contractSelection" class="pure-form">
         <fieldset>
             <span>TimeClock contract</span>
-            <input type="text" name="timeClockContract" placeholder="timeClockContract" size="64" maxlength="64" required/>
+            <input type="text" name="timeClockContract" placeholder="timeClockContract" size="64" maxlength="64" id="timeClockContract" required/>
             <button type="button" id="send" onclick="displayContract()" class="pure-button pure-button-primary">Display Contract</button>
-        </fieldset>
+                  OR  <button type="button" id="createNewCOntract" onclick="overlay('createContractDialog')" class="pure-button pure-button-secondary">Create New Contract</button>
+
+      </fieldset>
     </form>
 
+   <div id="historyInsert"></div>
+
     <div id="templateInsert"></div>
-        <script type="x-template"  id="template">
+    <div id="createContractInsert"></div>
+
+
+ <script type="x-template"  id="createContractInProgress">
+    <div id="createContractDialog" class="dialogFrame">
+      <div class="dialogBody">
+        <h2 class="transactionPending">Contract Creation in Progress, please wait ...</h2>
+      </div>
+    </div>
+  </script>
+
+
+ <script type="x-template"  id="createContractTemplate">
+    <div id="createContractDialog" class="dialogFrame">
+      <div class="dialogBody">
+        <h2>Create Contract</h2>
+        <form name="createContractForm" class="pure-form pure-form-aligned" action="javascript:createContract()">
+          <fieldset>
+            <legend>Create a TimeClock contract</legend>
+
+            <div class="pure-control-group">
+              <label for="accountToCreateFrom">Contractor Account</label>
+              <select name="accountToCreateFrom" placeholder="Account">
+                {{#accounts}}
+                <option>{{.}}</option>
+                {{/accounts}}
+              </select>
+            </div>
+
+            <div class="pure-control-group">
+              <label for="gasAmount">Gas Amount (ether)</label>
+              <input type="number" name="gasAmount" step="1" placeholder="Amount" min="50000" value="2000000" required/>
+            </div>
+
+            <div class="pure-control-group">
+              <label for="datetime-local">Contract Start</label>
+              <input type="datetime-local" name="startTime" placeholder="Start Time" min="{{minDate}}" required/>
+            </div>
+            <div class="pure-control-group">
+              <label for="paymentsCount">Total Payments</label>
+              <input type="number" name="paymentsCount" step="1" placeholder="Total Payments" required/>
+            </div>
+            <div class="pure-control-group">
+              <label for="paymentsInterval">Payment Interval (seconds)</label>
+              <input type="number" name="paymentsInterval" step="1" placeholder="Payment Interval" required/>
+            </div>
+            <div class="pure-control-group">
+              <label for="minimumPayment">Minimum Payment (ether)</label>
+              <input type="number" name="minimumPayment" placeholder="Minimum Payment" required/>
+            </div>
+            <div class="pure-control-group">
+              <label for="contractDetailsText">Contract Description</label>
+              <textarea name="contractDetailsText" placeholder="Contract Details Text" cols="50" rows="5"></textarea>
+            </div>
+
+            <div class="pure-controls">
+              <button type="submit" id="send" class="pure-button pure-button-primary">Create Contract</button>
+              <button type="button" onclick="overlay('createContractDialog')" class="button-cancel pure-button">Cancel</button>
+            </div>
+
+          </fieldset>
+        </form>
+      </div>
+    </div>
+
+  </script>
+  <script type="x-template"  id="template">
 
     {{#hasPendingTransactions}}
       <h2>Pending Transactions</h2>
@@ -231,6 +301,8 @@
               </form>
         </div>
     </div>
+
+
 
 
     <div id="payDialog" class="dialogFrame">
